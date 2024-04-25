@@ -31,7 +31,7 @@ class WindowRedact(QMainWindow):
         return stopwords
 
     def norm_form(self, morph, word):
-        return morph.parse(word)[0].normal_form
+        return morph.parse(word.strip())[0].normal_form
 
     def build_graph(self):
         self.textEdit.setReadOnly(True)
@@ -42,12 +42,12 @@ class WindowRedact(QMainWindow):
         for_df = self.clear_triplet(triplets)
         df_filtered = self.df_prepare(for_df)
         nodes, df_for_draw = self.split_data(df_filtered)
-        info_dict, label_dict, sent_string = self.process_edges(nodes, df_for_draw)
+        info_dict, label_dict, sent_string = self.process_edges(df_for_draw)
         name = self.visualize_graph(nodes, info_dict, label_dict)
-        dts = datetime.now().strftime("%d%m%Y_%H%M%S")
-        sents_save = f"Sample_sents_{dts}.txt"
-        with open(sents_save, "w", encoding="utf-8") as f:
-            f.write(sent_string)
+        # dts = datetime.now().strftime("%d%m%Y_%H%M%S")
+        # sents_save = f"Sample_sents_{dts}.txt"
+        # with open(sents_save, "w", encoding="utf-8") as f:
+        #     f.write(sent_string)
         print('GG EZ', '\n')
         self.hide()
         self.view_graph = WindowView(self, name)
@@ -220,11 +220,13 @@ class WindowRedact(QMainWindow):
         morph = pymorphy3.MorphAnalyzer(lang="ru")
         stopwords = self.load_stop_words()
         df_triplets = pd.DataFrame(for_df, columns=["full_sent", "subject", "verb", "object"])
+
         df_triplets["subj_n_f"] = df_triplets["subject"].apply(lambda x: self.norm_form(morph, x))
         df_triplets["obj_n_f"] = df_triplets["object"].apply(lambda x: self.norm_form(morph, x))
         df_filtered = df_triplets[(~df_triplets["subj_n_f"].isin(stopwords)) &\
                                   (~df_triplets["obj_n_f"].isin(stopwords))].sort_values(by="obj_n_f", ascending=False,\
                                                                                          ignore_index=True)
+        # print(df_filtered)
         return df_filtered
 
     def chunks(self, lst, n):
@@ -239,7 +241,7 @@ class WindowRedact(QMainWindow):
         nodes = pd.unique(df_for_draw[["subj_n_f", "obj_n_f"]].values.ravel("K"))
         return nodes, df_for_draw
 
-    def process_edges(self, nodes, df_for_draw):
+    def process_edges(self, df_for_draw):
         #обработка данных о связях
         df_d_d = df_for_draw.drop_duplicates(subset=["subj_n_f", "obj_n_f", "verb"])[["subj_n_f", "obj_n_f", "verb",\
                                                                                       "full_sent"]]
@@ -247,9 +249,9 @@ class WindowRedact(QMainWindow):
         label_dict = dict()
         sent_string = ''
         for cc, raw in enumerate(df_d_d.values):
-            info_dict[(raw[0], raw[1])] = {f"sent_{cc}": raw[3]}
-            sent_string = sent_string + raw[3][:-1] + '.' + '\n'
-            label_dict[(raw[0], raw[1])] = raw[2]
+            info_dict[(raw[0].strip(), raw[1].strip())] = {f"sent_{cc}": raw[3]}
+            # sent_string = sent_string + raw[3][:-1] + '.' + '\n'
+            label_dict[(raw[0].strip(), raw[1].strip())] = raw[2].strip()
         return info_dict, label_dict, sent_string
 
     def visualize_graph(self, nodes, info_dict, label_dict, gr_num=0):

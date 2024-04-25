@@ -2,7 +2,7 @@ header_text = r"""<!doctype html>
                   <html lang="ru">
                     <head>
                     <meta charset="utf-8"/>
-                    <title>Interractive graph</title>
+                    <title>Семантический граф</title>
                     <style>
                       .parent > div {
                         background: #eee;
